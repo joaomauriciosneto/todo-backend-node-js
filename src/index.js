@@ -1,7 +1,7 @@
 const express = require('express')
 const {Pool} = require('pg')
 const { user } = require('pg/lib/defaults')
-const {cors} = require('cors')
+const cors = require('cors')
 require('dotenv').config()
 
 const pool = new Pool({
