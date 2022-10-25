@@ -11,14 +11,6 @@ const app = express()
 app.use(express.json())
 app.use(cors())
 app.get('/', (req, res) => {console.log('Olá mundo!')})
-app.get('/users', async (req, res) => {
-    try {
-       const {rows} = await pool.query('SELECT * FROM users')
-       return res.status(200).send(rows)
-    } catch (error) {
-        return res.status(400).send(error)
-    }
-})
 
 const DOOR = process.env.PORT || 3333
 
@@ -61,6 +53,17 @@ app.get('/todo/:user_id', async (req, res) => {
     }
 })
 
+app.get('/all', async (req, res) => {
+
+    try {
+        const allUsers = await pool.
+        query('SELECT * FROM users')
+        return res.status(200).send(allUsers.rows)
+    } catch (error) {
+        return res.status(400).send(error)
+    }
+})
+
 app.patch('/todo/:user_id/:todo_id', async (req, res) => {
     const {todo_id, user_id} = req.params
     const data = req.body
@@ -79,6 +82,26 @@ app.patch('/todo/:user_id/:todo_id', async (req, res) => {
     }
 })
 
+app.delete('/session/:user_id', async (req, res) => {
+    const {user_id} = req.params
+    try {
+        const belongsToUser = await pool.
+        query('SELECT * FROM users WHERE user_id = ($1)', [user_id])
+        if(!belongsToUser.rows[0]) {
+            return res.status(404).send('User not found!')
+        }
+        const deletedUser = await pool.
+        query('DELETE FROM users WHERE user_id = ($1) RETURNING *', [user_id])
+
+        return res.status(200).send({
+            message: 'User successfully deleted!',
+            data: deletedUser.rows
+        })
+    } catch (error) {
+        return res.status(400).send(error)
+    }
+})
+
 app.delete('/todo/:user_id/:todo_id', async (req, res) => {
     const {user_id, todo_id} = req.params;
     try {
@@ -90,6 +113,7 @@ app.delete('/todo/:user_id/:todo_id', async (req, res) => {
         }
         const deleted = await pool.
         query('DELETE FROM todos WHERE todo_id = ($1) RETURNING *', [todo_id])  
+        
         return res.status(200).send({
             message: 'todo deleted',
             data: deleted.rows
